@@ -1,0 +1,65 @@
+name: Build MemoMaster
+
+# 触发机制：当你 push 代码到 main 分支时自动触发
+on:
+  push:
+    branches: [ "main" ]
+  # 允许你在网页端手动点击按钮触发
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest # 使用 Linux 环境构建，速度最快
+
+    steps:
+      # 1. 拉取代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. 准备 Node 环境
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      # 3. 缓存 pkg 的二进制包
+      - name: Cache pkg cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.pkg-cache
+          key: pkg-cache-node18
+
+      # 4. 装依赖
+      - name: Install Dependencies
+        run: npm install
+
+      # 4. 打包 EXE (使用 npx 调用 pkg)
+      - name: Build EXE
+        run: npx pkg app.js --targets node18-win-x64 --output MemoMaster.exe
+
+      # 5. 去除讨厌的 console 窗口 (执行 patch.js)
+      - name: Patch EXE (Remove Console)
+        run: node patch.js MemoMaster.exe
+
+      # 6. 创建 Release 并上传附件
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/') != true # 即使不是打标签，也强制发布
+        with:
+          # 自动生成版本号：v1.0.GitHub运行次数
+          tag_name: v1.0.${{ github.run_number }}
+          name: Release v1.0.${{ github.run_number }}
+          # 使用本次 Commit 的信息作为更新日志
+          body: |
+            **Update Log:**
+            ${{ github.event.head_commit.message }}
+            
+            _Built automatically by GitHub Actions_
+          files: MemoMaster.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

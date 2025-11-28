@@ -1,3 +1,16 @@
+// --- 0. 静默模式 (防止无黑框运行时崩溃) ---
+if (process.platform === 'win32') {
+    // 屏蔽控制台输出，防止在 GUI 模式下因找不到 stdout 而崩溃
+    const fs = require('fs');
+    try {
+        const nullStream = fs.createWriteStream('log.txt');
+        process.stdout.write = nullStream.write.bind(nullStream);
+        process.stderr.write = nullStream.write.bind(nullStream);
+        console.log = () => {}; 
+        console.error = () => {};
+    } catch (e) {}
+}
+
 const express = require('express');
 const { exec } = require('child_process');
 const app = express();
