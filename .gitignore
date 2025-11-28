@@ -1,0 +1,19 @@
+# 依赖包 
+node_modules/
+npm-debug.log
+
+# 环境变量与系统文件
+.env
+
+# 打包输出
+dist/
+*.exe
+*.pkg
+
+# 临时生成的图片
+*.png
+*.html
+!index.html
+
+# IDE
+.idea/
